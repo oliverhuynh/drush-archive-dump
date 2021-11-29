@@ -1,36 +1,42 @@
 #!/bin/bash
 
 function archivedump() {
-  echo "This is assuming ur files structure is as current, foldername is html. WORKINGDIR[html] => composer.json => web"
+  local fd
+  fd=$(pwd | rev | cut -d "/" -f 1 | rev)
+  echo "This is assuming ur files structure [${fd}: current} => composer.json => web"
   echo "The script is slow since it doesn't exclude anything! You should consider to wait for the real drush archive-dump ready in version 9!"
   read -r -p "Are you sure? " response
   drush sql-dump >./sql.sql
-  tar -czf /tmp/html.tar.gz ../html
+  tar -czf /tmp/${fd}.tar.gz ../${fd}
   rm ./sql.sql
   local targetdir
   targetdir="$HOME/drush-backups/archive-dump/$(date +%Y%m%d%s)"
   mkdir -p "$targetdir"
-  mv /tmp/html.tar.gz $targetdir
-  echo "Archive saved to $targetdir/html.tar.gz"
+  mv /tmp/${fd}.tar.gz $targetdir
+  echo "Archive saved to $targetdir/${fd}.tar.gz"
 }
 
 function archiverestore() {
   local file
   local copy
+  local fd
   file="$2"
   copy="$3"
-  [ ! -f $file ] && echo "File is not available" && return 1
+  fd=$(echo ${file} | rev | cut -d "/" -f 1 | rev | cut -d "." -f 1)
+  [ ! -f $file ] && echo "File $file is not available" && return 1
+  [ "" == "$file" ] && echo "File $file is not available" && return 1
   echo "About to restore entire website from $file"
-  echo "This is assuming ur files structure is as current: WORKINGDIR => [TARGETDIR:html] => composer.json => web"
-  echo "Ensure you have rights to edit the TARGETDIR"
+  echo "This is assuming ur files structure is as current: [WORKING/TARGETDIR:${fd}] => composer.json => web"
+  [ ! -d ../${fd} ] && echo "[CAUTION] Dir $fd is not available"
+  echo "Ensure you have rights to edit the TARGETDIR ../${fd}"
   read -r -p "Are you sure? Backup yet?" response
   local backupdir
-  backupdir="html.$(date +%Y%m%d%s)"
+  backupdir="${fd}.$(date +%Y%m%d%s)"
   local targetdir
   targetdir="$PWD"
 
   [ "$copy" == "" ] && {
-    mv html $backupdir || {
+    mv ${fd} $backupdir || {
       echo "Please check file permission. Use --restore FILEID --copy to not moving folder"
       exit 1
     }
@@ -38,17 +44,17 @@ function archiverestore() {
 
   [ "$copy" != "" ] && {
     cd /tmp
-    rm -rf html
+    rm -rf ${fd}
   }
   mv $file ./
 
   tar -xzf $(basename $file)
   mv $(basename $file) $file
   [ "$copy" != "" ] && {
-    rsync -raz html/ $targetdir/html
+    rsync -raz ${fd}/ $targetdir/${fd}
   }
 
-  cd $targetdir/html
+  cd $targetdir/${fd}
   drush sql-cli <./sql.sql
   rm -rf $backupdir
 
