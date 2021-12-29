@@ -6,7 +6,7 @@ function archivedump() {
   echo "This is assuming ur files structure [${fd}: current} => composer.json => web"
   echo "The script is slow since it doesn't exclude anything! You should consider to wait for the real drush archive-dump ready in version 9!"
   read -r -p "Are you sure? " response
-  drush sql-dump >./sql.sql
+  drush sql-dump --extra=-f >./sql.sql
   tar -czf /tmp/${fd}.tar.gz ../${fd}
   rm ./sql.sql
   local targetdir
