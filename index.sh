@@ -3,16 +3,19 @@
 function archivedump() {
   local fd
   fd=$(pwd | rev | cut -d "/" -f 1 | rev)
-  echo "This is assuming ur files structure [${fd}: current} => composer.json => web"
+  echo "This is assuming ur files structure [${fd}: current} => composer.json"
   echo "The script is slow since it doesn't exclude anything! You should consider to wait for the real drush archive-dump ready in version 9!"
   read -r -p "Are you sure? " response
   drush sql-dump --extra=-f >./sql.sql
-  tar -czf /tmp/${fd}.tar.gz ../${fd}
+  local tmpdir
+  tmpdir="$HOME/drush-backups/tmp"
+  mkdir -p $tmpdir
+  tar -czf ${tmpdir}/${fd}.tar.gz ../${fd}
   rm ./sql.sql
   local targetdir
   targetdir="$HOME/drush-backups/archive-dump/$(date +%Y%m%d%s)"
   mkdir -p "$targetdir"
-  mv /tmp/${fd}.tar.gz $targetdir
+  mv ${tmpdir}/${fd}.tar.gz $targetdir
   echo "Archive saved to $targetdir/${fd}.tar.gz"
 }
 
@@ -26,7 +29,7 @@ function archiverestore() {
   [ ! -f $file ] && echo "File $file is not available" && return 1
   [ "" == "$file" ] && echo "File $file is not available" && return 1
   echo "About to restore entire website from $file"
-  echo "This is assuming ur files structure is as current: [WORKING/TARGETDIR:${fd}] => composer.json => web"
+  echo "This is assuming ur files structure is as current: [WORKING/TARGETDIR:${fd}] => composer.json"
   [ ! -d ../${fd} ] && echo "[CAUTION] Dir $fd is not available"
   echo "Ensure you have rights to edit the TARGETDIR ../${fd}"
   read -r -p "Are you sure? Backup yet?" response
@@ -43,8 +46,10 @@ function archiverestore() {
   }
 
   [ "$copy" != "" ] && {
-    cd /tmp
-    rm -rf ${fd}
+    local tmpdir
+    tmpdir="$HOME/drush-backups/tmp"
+    mkdir -p $tmpdir
+    rm -rf ${tmpdir}/${fd}
   }
   mv $file ./
 
