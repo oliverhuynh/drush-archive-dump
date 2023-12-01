@@ -24,12 +24,13 @@ function archivedump() {
   fd=$(pwd | rev | cut -d "/" -f 1 | rev)
   echo "This is assuming ur files structure [${fd}: current} => composer.json"
   echo "The script is slow since it doesn't exclude anything! You should consider to wait for the real drush archive-dump ready in version 9!"
-  read -r -p "Are you sure? " response
+  read -r -p "Are you sure? TAR_EXTRA='$TAR_EXTRA'." response
+
   drush sql-dump --extra=-f >./sql.sql
   local tmpdir
   tmpdir="$HOME/drush-backups/tmp"
   mkdir -p $tmpdir
-  tar -czf ${tmpdir}/${fd}.tar.gz ../${fd}
+  tar $TAR_EXTRA -czf ${tmpdir}/${fd}.tar.gz ../${fd}
   rm ./sql.sql
   local targetdir
   targetdir="$HOME/drush-backups/archive-dump/$(date +%Y%m%d%s)"
