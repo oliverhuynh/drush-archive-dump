@@ -1,7 +1,13 @@
 {
   "name": "drush-archive-dump",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.js",
   "license": "MIT",
-  "author": "Oliver Huynh"
+  "author": "Oliver Huynh",
+  "bin": {
+    "drush-archive-dump": "./index.sh"
+  },
+  "dependencies": {
+    "oliver-framework": "https://github.com/jufist/oliver-framework"
+  }
 }

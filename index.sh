@@ -1,5 +1,24 @@
 #!/bin/bash
 
+SCRIPT=$(readlink -f "$0")
+# No sym
+# SCRIPT=`realpath -s $0`
+SCRIPTPATH=$(dirname $SCRIPT)
+WORKINGDIR=$(pwd)
+MYHOME="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+# Optional
+shopt -s expand_aliases
+
+export YARNGLOBALDIR=${YARNGLOBALDIR:-"$(yarn global dir)"}
+globaldir=${YARNGLOBALDIR:-"$YARNGLOBALDIR"}
+if [[ -d "$globaldir/node_modules/oliver-framework" && "$DEBUG_OLIVER" == "" ]]; then
+  . "$globaldir/node_modules/oliver-framework/bash/common.sh"
+else
+  . $(dirname $(node -e "console.log('path: \'' + require.resolve('oliver-framework'))" | grep -F "path: '" | cut -d "'" -f 2))/bash/common.sh
+fi
+loadenv
+
 function archivedump() {
   local fd
   fd=$(pwd | rev | cut -d "/" -f 1 | rev)
@@ -67,5 +86,25 @@ function archiverestore() {
   echo "Restored successfully!"
 }
 
-[ "$1" == "" ] && archivedump
-[ "$1" == "--restore" ] && archiverestore "$@"
+exec--dump() { 
+  archivedump
+}
+
+vars_parse--restore() {
+  definedargs=()
+  definedparams=("file*", "copy")
+  inputargs=("$@")
+  myargs inputargs definedargs definedparams
+  [[ "$?" != "0" ]] && return 1
+  set -- "${newargs[@]}"
+
+  RESTARGS=("$@")
+}
+
+exec--restore() {
+  # Use rest parameters by RESTARGS instead of $@ normally here or override $@ by following command
+  set -- "${RESTARGS[@]}"
+  archiverestore "not-use" "${MP_file}" "${MP_copy}"
+}
+
+oliver-common-exec "$@"
